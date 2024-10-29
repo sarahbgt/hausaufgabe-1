@@ -31,6 +31,17 @@ class Enemy:
         if self.rect.bottom > Settings.WINDOW_HEIGHT or self.rect.top < 0:
             self.speed_y *= -1
 
+class Collectible:
+    def __init__(self):
+        self.image= pygame.image.load(os.path.join(Settings.IMAGE_PATH, "brick1.png")).convert()
+        self.image = pygame.transform.scale(self.image, (30, 30))
+        self.rect = self.image.get_rect(center=(random.randint(50, Settings.WINDOW_WIDTH - 50), random.randint(50, Settings.WINDOW_HEIGHT - 50)))
+
+    def grow(self):
+        new_width = self.rect.width + 2
+        new_height = self.rect.height + 2
+        self.image = pygame.transform.scale(self.image, (new_width, new_height))
+        self.rect = self.image.get_rect(center=self.rect.center)
 
 def main():
     os.environ["SDL_VIDEO_WINDOW_POS"] = "10, 50"
@@ -46,6 +57,14 @@ def main():
     defender_speed = 10
     defender_derection_x = -1
     defender_derection_y = 1
+    
+    obstacles = [
+        pygame.Rect(300, 350, 40, 40),  # Rechteck
+        pygame.Rect(90, 512, 40, 40),   # Rechteck
+        pygame.Rect(90, 200, 40, 40),   # Kreis (optional)
+        pygame.Rect(500, 512, 40, 40),  # Unregelmäßige Form (optional)
+        pygame.Rect(400, 150, 40, 40)   # Unregelmäßige Form (optional)
+    ]
 
     objekt1_image = pygame.image.load(os.path.join(Settings.IMAGE_PATH, "stein01.png")).convert()
     objekt1_image = pygame.transform.scale(objekt1_image, (40, 40))
@@ -75,8 +94,9 @@ def main():
     background_image = pygame.image.load(os.path.join(Settings.IMAGE_PATH, "background03.png")).convert()
     background_image = pygame.transform.scale(background_image, (Settings.WINDOW_WIDTH, Settings.WINDOW_HEIGHT))
 
-    enemies = []  #liste der Gegner
-    enemy_spawn_timer = 0 #timer zum Erzeugen von Gegnern
+    enemies = []
+    enemy_spawn_timer = 0
+    collectibles = [Collectible()]
 
     running = True
     while running:
@@ -96,16 +116,27 @@ def main():
             #überprüfen ob der Gegner mit einem Hindernis kollidiert
             if enemy.rect.colliderect(objekt1_rect) or enemy.rect.colliderect(objekt2_rect) or enemy.rect.colliderect(objekt3_rect) or enemy.rect.colliderect(objekt4_rect) or enemy.rect.colliderect(objekt5_rect):
                 enemies.remove(enemy)  #Gegner verschwindet bei Kollision
-
+       
+        # Kollision mit Hindernissen für Collectible
+        collectible = collectibles[0]
+        collectible.grow()
+        for obstacle in obstacles:
+            if collectible.rect.colliderect(obstacle):
+                collectibles[0] = Collectible()  # Neue Collectible erstellen
+                break
 
         defender_rect.move_ip(defender_derection_x * defender_speed, defender_derection_y * defender_speed)
         if defender_rect.left < 0 or defender_rect.right > Settings.WINDOW_WIDTH:
             defender_derection_x *= -1
         if defender_rect.top < 0 or defender_rect.bottom > Settings.WINDOW_HEIGHT:
             defender_derection_y *= -1
-
+        
+        for obstacle in obstacles:
+            pygame.draw.rect(screen, (255, 0, 0), obstacle)
+        
         screen.blit(background_image, (0, 0))
         screen.blit(defender_image, defender_rect)
+        screen.blit(collectible.image, collectible.rect.topleft)
         screen.blit(objekt1_image, objekt1_rect.topleft)
         screen.blit(objekt2_image, objekt2_rect.topleft)
         screen.blit(objekt3_image, objekt3_rect.topleft)
